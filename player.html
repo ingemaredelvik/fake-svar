@@ -125,7 +125,8 @@
       padding: 13px 16px; font-size: 0.93rem; line-height: 1.5;
       cursor: pointer; color: #ccc; text-align: left;
       transition: border-color 0.15s, background 0.15s, transform 0.08s;
-      user-select: none;
+      user-select: none; touch-action: manipulation;
+      -webkit-user-select: none;
     }
     .vote-opt:active { transform: scale(0.97); }
     .vote-opt.selected {
@@ -277,13 +278,14 @@
     }
 
     // ── State ────────────────────────────────────────────────────
-    let teamKey      = null;
-    let teamName     = '';
-    let myAnswer     = null;
-    let myVote       = null;
-    let myScore      = 0;
-    let currentRound = 0;
-    let selectedOpt  = null;
+    let teamKey           = null;
+    let teamName          = '';
+    let myAnswer          = null;
+    let myVote            = null;
+    let myScore           = 0;
+    let currentRound      = 0;
+    let selectedOpt       = null;
+    let votingScreenBuilt = false;
 
     // ── DOM ──────────────────────────────────────────────────────
     const joinBtn         = document.getElementById('join-btn');
@@ -357,8 +359,11 @@
         if (!room) return;
         // Reset per-round local state when round changes
         if (room.round !== currentRound) {
-          currentRound = room.round;
-          myAnswer = null; myVote = null; selectedOpt = null;
+          currentRound      = room.round;
+          myAnswer          = null;
+          myVote            = null;
+          selectedOpt       = null;
+          votingScreenBuilt = false;
           answerInput.value = '';
           writeError.textContent = '';
           submitAnswerBtn.disabled = false;
@@ -393,8 +398,8 @@
         case 'voting':
           if (myVote) {
             setWaiting('Röstat! Väntar på resultaten…');
-          } else if (room.voteOptions && activeScreenId() !== 'screen-voting') {
-            // Only build once — don't rebuild when other teams vote (that would clear selection)
+          } else if (room.voteOptions && !votingScreenBuilt) {
+            votingScreenBuilt = true;
             buildVotingScreen(room);
           }
           break;
@@ -439,7 +444,7 @@
         div.className = 'vote-opt' + (isOwn ? ' own' : '');
         div.textContent = text;
         if (!isOwn) {
-          div.addEventListener('click', () => {
+          div.addEventListener('pointerdown', () => {
             document.querySelectorAll('.vote-opt').forEach(o => o.classList.remove('selected'));
             div.classList.add('selected');
             selectedOpt = key;
