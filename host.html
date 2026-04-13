@@ -492,24 +492,12 @@
         }
       });
 
-      // Count how many (non-penalized) teams wrote each unique answer
-      const answerFreq = {};
-      Object.entries(answers).forEach(([teamKey, text]) => {
-        if (text && !correctedTeams.includes(teamKey)) {
-          const key = text.trim().toLowerCase();
-          answerFreq[key] = (answerFreq[key] || 0) + 1;
-        }
-      });
-
-      // Build entries: real definition + non-corrected, non-duplicate fake answers
-      // Duplicates are silently dropped — those teams can still vote, they just earn no fooling-points
+      // Build entries: real definition + non-corrected fake answers
       const entries = [{ text: wordObj.definition, authorKey: null }];
       Object.entries(teams).forEach(([teamKey]) => {
         const text = answers[teamKey];
         if (text && !correctedTeams.includes(teamKey)) {
-          if (answerFreq[text.trim().toLowerCase()] === 1) {
-            entries.push({ text, authorKey: teamKey });
-          }
+          entries.push({ text, authorKey: teamKey });
         }
       });
 
@@ -583,7 +571,7 @@
       Object.entries(teams).forEach(([k, t]) => { newScores[k] = t.score || 0; });
 
       // -2 penalty for teams who wrote the correct definition (they shouldn't!)
-      correctedTeams.forEach(k => { newScores[k] = Math.max(0, (newScores[k] || 0) - 2); });
+      correctedTeams.forEach(k => { newScores[k] = (newScores[k] || 0) - 2; });
 
       // Build reveal data and compute remaining points
       const reveal = {};
@@ -603,7 +591,7 @@
             newScores[authorKey] = (newScores[authorKey] || 0) + optPts;
           }
           // -2 to teams that were fooled
-          voters.forEach(k => { newScores[k] = Math.max(0, (newScores[k] || 0) - 2); });
+          voters.forEach(k => { newScores[k] = (newScores[k] || 0) - 2; });
         }
 
         reveal[optKey] = {
