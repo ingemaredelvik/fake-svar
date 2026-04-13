@@ -281,7 +281,7 @@
     // ── Word list — one-word synonyms as correct answers ──────────
     // Players write a fake ONE-WORD synonym; the real answer is also one word.
     const WORD_LIST = [
-      { word: "Grymta Hejdå",      definition: "Morra" },
+      { word: "Grymta",      definition: "Morra" },
       { word: "Fnissa",      definition: "Kichna" },
       { word: "Sniken",      definition: "Girig" },
       { word: "Lömsk",       definition: "Falsk" },
@@ -492,12 +492,24 @@
         }
       });
 
-      // Build entries: real definition + non-corrected fake answers
+      // Count how many (non-penalized) teams wrote each unique answer
+      const answerFreq = {};
+      Object.entries(answers).forEach(([teamKey, text]) => {
+        if (text && !correctedTeams.includes(teamKey)) {
+          const key = text.trim().toLowerCase();
+          answerFreq[key] = (answerFreq[key] || 0) + 1;
+        }
+      });
+
+      // Build entries: real definition + non-corrected, non-duplicate fake answers
+      // Duplicates are silently dropped — those teams can still vote, they just earn no fooling-points
       const entries = [{ text: wordObj.definition, authorKey: null }];
       Object.entries(teams).forEach(([teamKey]) => {
         const text = answers[teamKey];
         if (text && !correctedTeams.includes(teamKey)) {
-          entries.push({ text, authorKey: teamKey });
+          if (answerFreq[text.trim().toLowerCase()] === 1) {
+            entries.push({ text, authorKey: teamKey });
+          }
         }
       });
 
