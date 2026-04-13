@@ -190,7 +190,7 @@
   <!-- JOIN -->
   <div id="screen-join" class="screen active">
     <div class="logo">FAKE SVAR</div>
-    <p class="subtitle">Skriv ett fejk-synonym för ovanliga svenska ord — och lura de andra lagen!</p>
+    <p class="subtitle">Skriv ett fejk-svar — och lura de andra lagen!</p>
     <input type="text" id="team-name" placeholder="Lagets namn" maxlength="24"
       autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
     <p id="join-error" class="error-text"></p>
@@ -209,7 +209,7 @@
   <div id="screen-writing" class="screen" style="justify-content:flex-start; padding-top:36px;">
     <p class="phase-chip">Runda <span id="writing-round">1</span></p>
     <div class="word-big" id="writing-word">—</div>
-    <p class="hint-text">Skriv ett <strong style="color:#fff;">fejk synonymt ord</strong> — ett ord som låter rätt men inte är det!</p>
+    <p class="hint-text">Skriv ett <strong style="color:#fff;">fejk-svar</strong> — något som låter rätt men inte är det!</p>
     <textarea id="answer-input" placeholder="Ett ord…" maxlength="60" rows="2"></textarea>
     <p id="write-error" class="error-text"></p>
     <button class="btn btn-primary" id="submit-answer-btn">Skicka svar</button>
@@ -230,7 +230,7 @@
     <div id="penalized-word" class="word-big" style="font-size:clamp(2rem,9vw,3rem);"></div>
     <div style="background:rgba(255,68,68,.1); border:1px solid rgba(255,68,68,.3); border-radius:14px; padding:18px 22px; max-width:300px; text-align:center; line-height:1.65;">
       <p style="color:#ff6666; font-weight:800; font-size:1.4rem; margin-bottom:6px;">−2 poäng</p>
-      <p style="color:#888; font-size:0.85rem;">Du svarade med rätt synonym — man ska skriva ett <em style="color:#ccc;">fejk</em> svar. Du är utesluten från röstningen denna runda.</p>
+      <p style="color:#888; font-size:0.85rem;">Du svarade med rätt svar — man ska skriva ett <em style="color:#ccc;">fejk</em> svar. Du är utesluten från röstningen denna runda.</p>
     </div>
     <p class="hint-text">Väntar på att röstningen avslutas…</p>
   </div>
@@ -248,7 +248,7 @@
   <div id="screen-results" class="screen">
     <p class="phase-chip" id="results-round-chip">Runda 1</p>
     <div class="word-big" id="results-word" style="font-size:clamp(2rem,10vw,3rem);"></div>
-    <p class="phase-chip">Rätt synonym var</p>
+    <p class="phase-chip">Rätt svar var</p>
     <div class="correct-box" id="results-correct"></div>
     <div class="score-delta" id="results-delta">+0</div>
     <p class="score-total">Totalt: <strong id="results-total">0</strong> poäng</p>
