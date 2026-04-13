@@ -112,41 +112,6 @@
     }
     .progress-fill { height: 100%; background: #b44fff; border-radius: 5px; transition: width 0.4s ease; }
 
-    /* ── REVIEWING ───────────────────────────────────────── */
-    #screen-reviewing {
-      justify-content: flex-start; padding-top: 28px; overflow-y: auto;
-      gap: 16px;
-    }
-    .real-def-box {
-      background: rgba(0,255,136,.07); border: 1px solid rgba(0,255,136,.25);
-      border-radius: 12px; padding: 14px 20px; max-width: 700px; width: 100%;
-    }
-    .real-def-label { font-size: 0.7rem; color: #00ff88; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
-    .real-def-text { font-size: clamp(0.9rem, 1.8vw, 1.1rem); color: #00ff88; line-height: 1.5; }
-    #review-list {
-      width: 100%; max-width: 700px;
-      display: flex; flex-direction: column; gap: 10px;
-      overflow-y: auto;
-    }
-    .review-row {
-      display: flex; align-items: flex-start; gap: 14px;
-      background: #141424; border: 1px solid #1e1e34; border-radius: 12px;
-      padding: 14px 18px;
-    }
-    .review-row.corrected { border-color: #00ff88; background: #0d1f14; }
-    .review-team { font-size: 0.8rem; color: #555; font-weight: 700; min-width: 80px; flex-shrink: 0; margin-top: 2px; }
-    .review-text { flex: 1; font-size: clamp(0.85rem, 1.6vw, 1rem); color: #ccc; line-height: 1.5; }
-    .review-row.corrected .review-text { color: #fff; }
-    .correct-toggle {
-      flex-shrink: 0; padding: 7px 14px; border-radius: 8px;
-      border: 1px solid #2a2a44; background: #1c1c30; color: #666;
-      font-size: 0.78rem; font-weight: 700; cursor: pointer;
-      transition: all 0.15s; white-space: nowrap; letter-spacing: 0.5px;
-    }
-    .correct-toggle:hover { border-color: #00ff88; color: #00ff88; }
-    .correct-toggle.active { border-color: #00ff88; background: rgba(0,255,136,.12); color: #00ff88; }
-    .no-answer { font-size: 0.85rem; color: #333; font-style: italic; }
-
     /* ── VOTING ──────────────────────────────────────────── */
     #screen-voting { gap: 32px; }
     .vote-big-count {
@@ -268,17 +233,6 @@
     <button class="btn btn-secondary" id="end-writing-btn">Avsluta skrivfas →</button>
   </div>
 
-  <!-- REVIEWING (host only) -->
-  <div id="screen-reviewing" class="screen">
-    <p class="phase-chip">Granska svar — <span id="review-word-chip">—</span></p>
-    <div class="real-def-box">
-      <p class="real-def-label">✓ Rätt synonym</p>
-      <p class="real-def-text" id="review-real-def">—</p>
-    </div>
-    <div id="review-list"></div>
-    <button class="btn btn-primary" id="start-voting-btn">🗳️ Starta Röstning</button>
-  </div>
-
   <!-- VOTING -->
   <div id="screen-voting" class="screen">
     <p class="phase-chip">RÖSTNING PÅGÅR — <span id="voting-word-chip">—</span></p>
@@ -384,10 +338,6 @@
     const writingTeamTot = document.getElementById('writing-team-total');
     const writingBar     = document.getElementById('writing-bar');
     const endWritingBtn  = document.getElementById('end-writing-btn');
-    const reviewWordChip = document.getElementById('review-word-chip');
-    const reviewRealDef  = document.getElementById('review-real-def');
-    const reviewList     = document.getElementById('review-list');
-    const startVotingBtn = document.getElementById('start-voting-btn');
     const votingWordChip = document.getElementById('voting-word-chip');
     const voteCountEl    = document.getElementById('vote-count');
     const voteTotalEl    = document.getElementById('vote-total');
@@ -523,62 +473,23 @@
       showScreen('screen-writing');
     }
 
-    // ── End writing → reviewing ───────────────────────────────────
-    endWritingBtn.addEventListener('click', endWritingPhase);
-
-    async function endWritingPhase() {
-      await roomRef.update({ state: 'reviewing' });
-      db.ref(`fake-answer/${roomId}/answers`).off();
-
-      const wordObj    = WORD_LIST[currentWordIdx];
-      reviewWordChip.textContent = wordObj.word;
-      reviewRealDef.textContent  = wordObj.definition;
-
-      // Read all submitted answers
-      const snap    = await db.ref(`fake-answer/${roomId}/answers`).once('value');
-      const answers = snap.val() || {};
-      correctedTeams = [];
-
-      reviewList.innerHTML = '';
-      Object.entries(teams).forEach(([teamKey, team]) => {
-        const text = answers[teamKey] || null;
-        const row  = document.createElement('div');
-        row.className = 'review-row';
-
-        if (!text) {
-          row.innerHTML = `
-            <div class="review-team">${esc(team.name)}</div>
-            <div class="review-text no-answer">Inget svar inskickat</div>
-          `;
-        } else {
-          let toggled = false;
-          row.innerHTML = `
-            <div class="review-team">${esc(team.name)}</div>
-            <div class="review-text">${esc(text)}</div>
-            <button class="correct-toggle" data-key="${teamKey}">⚠️ Skrev rätt svar (−2)</button>
-          `;
-          const btn = row.querySelector('.correct-toggle');
-          btn.addEventListener('click', () => {
-            toggled = !toggled;
-            btn.classList.toggle('active', toggled);
-            row.classList.toggle('corrected', toggled);
-            if (toggled) { correctedTeams.push(teamKey); }
-            else         { correctedTeams = correctedTeams.filter(k => k !== teamKey); }
-          });
-        }
-        reviewList.appendChild(row);
-      });
-
-      showScreen('screen-reviewing');
-    }
-
-    // ── Start voting ──────────────────────────────────────────────
-    startVotingBtn.addEventListener('click', startVoting);
+    // ── End writing → voting (auto-detects correct answers) ──────
+    endWritingBtn.addEventListener('click', startVoting);
 
     async function startVoting() {
+      db.ref(`fake-answer/${roomId}/answers`).off();
+
       const wordObj = WORD_LIST[currentWordIdx];
       const snap    = await db.ref(`fake-answer/${roomId}/answers`).once('value');
       const answers = snap.val() || {};
+
+      // Auto-detect teams who wrote the correct answer → they get -2, excluded from vote options
+      correctedTeams = [];
+      Object.entries(answers).forEach(([teamKey, text]) => {
+        if (text && text.trim().toLowerCase() === wordObj.definition.trim().toLowerCase()) {
+          correctedTeams.push(teamKey);
+        }
+      });
 
       // Build entries: real definition + non-corrected fake answers
       const entries = [{ text: wordObj.definition, authorKey: null }];

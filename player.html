@@ -392,9 +392,6 @@
           }
           break;
 
-        case 'reviewing':
-          setWaiting('Svar insamlade – väntar på att röstningen ska börja…'); break;
-
         case 'voting':
           if (myVote) {
             setWaiting('Röstat! Väntar på resultaten…');
@@ -423,7 +420,7 @@
         await db.ref(`fake-answer/${roomId}/answers/${teamKey}`).set(text);
         myAnswer = text;
         submitAnswerBtn.textContent = 'Skicka svar';
-        setWaiting('Svar skickat! Väntar på de andra…');
+        setWaiting('Svar skickat! Väntar på att röstningen ska börja…');
       } catch(e) {
         writeError.textContent = 'Fel – försök igen.';
         submitAnswerBtn.disabled = false; submitAnswerBtn.textContent = 'Skicka svar';
