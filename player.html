@@ -223,6 +223,18 @@
     <div class="team-badge" id="waiting-badge"></div>
   </div>
 
+  <!-- PENALIZED (wrote the correct answer) -->
+  <div id="screen-penalized" class="screen">
+    <div style="font-size:2.6rem">🤔</div>
+    <p style="font-size:0.7rem; color:#ffd700; letter-spacing:4px; text-transform:uppercase;">Du svarade rätt!</p>
+    <div id="penalized-word" class="word-big" style="font-size:clamp(2rem,9vw,3rem);"></div>
+    <div style="background:rgba(255,68,68,.1); border:1px solid rgba(255,68,68,.3); border-radius:14px; padding:18px 22px; max-width:300px; text-align:center; line-height:1.65;">
+      <p style="color:#ff6666; font-weight:800; font-size:1.4rem; margin-bottom:6px;">−2 poäng</p>
+      <p style="color:#888; font-size:0.85rem;">Du svarade med rätt synonym — man ska skriva ett <em style="color:#ccc;">fejk</em> svar. Du är utesluten från röstningen denna runda.</p>
+    </div>
+    <p class="hint-text">Väntar på att röstningen avslutas…</p>
+  </div>
+
   <!-- VOTING -->
   <div id="screen-voting" class="screen" style="justify-content:flex-start; padding-top:28px; overflow-y:auto;">
     <p class="phase-chip">Vilket är det <strong style="color:#fff; font-size:0.95rem;">RIKTIGA</strong> svaret?</p>
@@ -324,6 +336,10 @@
       waitingBadge.textContent = teamName;
       showScreen('screen-waiting');
     }
+    function showPenalized(word) {
+      document.getElementById('penalized-word').textContent = word || '—';
+      showScreen('screen-penalized');
+    }
 
     // ── Join ─────────────────────────────────────────────────────
     joinBtn.addEventListener('click', handleJoin);
@@ -395,6 +411,8 @@
         case 'voting':
           if (myVote) {
             setWaiting('Röstat! Väntar på resultaten…');
+          } else if (room.correctedTeams && room.correctedTeams[teamKey]) {
+            showPenalized(room.word);
           } else if (room.voteOptions && !votingScreenBuilt) {
             votingScreenBuilt = true;
             buildVotingScreen(room);

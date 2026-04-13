@@ -445,14 +445,15 @@
       const wordObj  = WORD_LIST[pick];
 
       await roomRef.update({
-        state:       'writing',
-        round:       currentRound,
-        word:        wordObj.word,
-        definition:  wordObj.definition,
-        answers:     null,
-        voteOptions: null,
-        votes:       null,
-        roundResult: null,
+        state:          'writing',
+        round:          currentRound,
+        word:           wordObj.word,
+        definition:     wordObj.definition,
+        answers:        null,
+        voteOptions:    null,
+        correctedTeams: null,
+        votes:          null,
+        roundResult:    null,
       });
 
       writingRoundEl.textContent = currentRound;
@@ -516,7 +517,15 @@
         voteOptionsCache[k] = e.text;
       });
 
-      await roomRef.update({ state: 'voting', voteOptions });
+      // Publish corrected teams as a map so players can check their own key
+      const correctedMap = {};
+      correctedTeams.forEach(k => { correctedMap[k] = true; });
+
+      await roomRef.update({
+        state:          'voting',
+        voteOptions,
+        correctedTeams: correctedTeams.length > 0 ? correctedMap : null,
+      });
 
       // Watch vote count
       db.ref(`fake-answer/${roomId}/votes`).off();
