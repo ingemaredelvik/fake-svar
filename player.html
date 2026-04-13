@@ -393,7 +393,8 @@
         case 'voting':
           if (myVote) {
             setWaiting('Röstat! Väntar på resultaten…');
-          } else if (room.voteOptions) {
+          } else if (room.voteOptions && activeScreenId() !== 'screen-voting') {
+            // Only build once — don't rebuild when other teams vote (that would clear selection)
             buildVotingScreen(room);
           }
           break;
