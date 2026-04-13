@@ -521,10 +521,15 @@
       const correctedMap = {};
       correctedTeams.forEach(k => { correctedMap[k] = true; });
 
+      // Auto-cast a placeholder vote for penalized teams so they count in the tally
+      const votesInit = {};
+      correctedTeams.forEach(k => { votesInit[k] = '__abstain__'; });
+
       await roomRef.update({
         state:          'voting',
         voteOptions,
         correctedTeams: correctedTeams.length > 0 ? correctedMap : null,
+        votes:          Object.keys(votesInit).length > 0 ? votesInit : null,
       });
 
       // Watch vote count
@@ -534,8 +539,8 @@
       });
 
       votingWordChip.textContent = wordObj.word;
-      voteTotalEl.textContent    = teamCount - correctedTeams.length;
-      voteCountEl.textContent    = '0';
+      voteTotalEl.textContent    = teamCount;
+      voteCountEl.textContent    = correctedTeams.length.toString();
       showScreen('screen-voting');
     }
 
@@ -551,10 +556,11 @@
       // Find real option key
       const realOptKey = Object.entries(optionMap).find(([, v]) => v === null)?.[0];
 
-      // Count votes per option and track voters
+      // Count votes per option and track voters (skip placeholder abstain votes)
       const voteCounts = {};
       const votersMap  = {};
       Object.entries(votes).forEach(([voterKey, optKey]) => {
+        if (optKey === '__abstain__') return;
         voteCounts[optKey] = (voteCounts[optKey] || 0) + 1;
         if (!votersMap[optKey]) votersMap[optKey] = [];
         votersMap[optKey].push(voterKey);
