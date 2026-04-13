@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Fake Svar</title>
+  <style>
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    html, body {
+      width: 100%; height: 100%;
+      background: #080812;
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+    .screen {
+      display: none;
+      position: fixed; inset: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 22px;
+      gap: 14px;
+      overflow-y: auto;
+    }
+    .screen.active { display: flex; }
+
+    /* ── Brand ───────────────────────────────────────────── */
+    .logo {
+      font-size: clamp(2.2rem, 10vw, 3.2rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #b44fff 0%, #ff44cc 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -1px; line-height: 1;
+    }
+    .subtitle {
+      font-size: 0.88rem; color: #666;
+      text-align: center; max-width: 280px; line-height: 1.5;
+    }
+
+    /* ── Inputs ──────────────────────────────────────────── */
+    input[type="text"] {
+      width: 100%; max-width: 320px;
+      padding: 14px 18px;
+      background: #141424; border: 2px solid #2a2a44; border-radius: 12px;
+      color: #fff; font-size: 1.1rem; font-weight: 600;
+      text-align: center; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]:focus { border-color: #b44fff; box-shadow: 0 0 0 3px rgba(180,79,255,.15); }
+    input[type="text"]::placeholder { color: #444; font-weight: 400; }
+
+    textarea {
+      width: 100%; max-width: 360px; min-height: 110px;
+      padding: 14px 16px;
+      background: #141424; border: 2px solid #2a2a44; border-radius: 12px;
+      color: #fff; font-size: 1rem; font-family: inherit;
+      outline: none; resize: none; line-height: 1.55;
+      transition: border-color 0.2s;
+      user-select: text; -webkit-user-select: text;
+    }
+    textarea:focus { border-color: #b44fff; }
+    textarea::placeholder { color: #444; }
+
+    /* ── Buttons ─────────────────────────────────────────── */
+    .btn {
+      padding: 14px 32px; border: none; border-radius: 12px;
+      font-size: 1rem; font-weight: 800; cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    .btn:active { transform: scale(0.94); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+    .btn-primary {
+      background: linear-gradient(135deg, #b44fff, #ff44cc);
+      color: #fff; width: 100%; max-width: 320px;
+      box-shadow: 0 4px 20px rgba(180,79,255,.35);
+    }
+    .error-text { color: #ff5566; font-size: 0.82rem; text-align: center; min-height: 18px; }
+
+    /* ── Waiting ─────────────────────────────────────────── */
+    .pulse-ring {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 3px solid #b44fff;
+      animation: pulseRing 1.8s ease-in-out infinite;
+    }
+    @keyframes pulseRing {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(1.2); opacity: 0.45; }
+    }
+    .team-badge {
+      background: #141424; border: 2px solid #b44fff; border-radius: 10px;
+      padding: 8px 24px; font-size: 1rem; font-weight: 700; color: #b44fff;
+    }
+    .waiting-text { font-size: 1.05rem; color: #888; text-align: center; max-width: 280px; line-height: 1.5; }
+
+    /* ── Word display ────────────────────────────────────── */
+    .phase-chip {
+      font-size: 0.7rem; color: #555; letter-spacing: 4px; text-transform: uppercase;
+    }
+    .word-big {
+      font-size: clamp(2.4rem, 12vw, 4rem);
+      font-weight: 900; color: #fff; text-align: center;
+      letter-spacing: -1px; line-height: 1;
+    }
+    .hint-text {
+      font-size: 0.85rem; color: #555; text-align: center; max-width: 300px; line-height: 1.5;
+    }
+    .progress-label { font-size: 0.85rem; color: #444; }
+    .progress-label strong { color: #b44fff; }
+
+    /* ── Vote options ────────────────────────────────────── */
+    #vote-list {
+      width: 100%; max-width: 380px;
+      display: flex; flex-direction: column; gap: 9px;
+    }
+    .vote-opt {
+      background: #141424; border: 2px solid #2a2a44; border-radius: 12px;
+      padding: 13px 16px; font-size: 0.93rem; line-height: 1.5;
+      cursor: pointer; color: #ccc; text-align: left;
+      transition: border-color 0.15s, background 0.15s, transform 0.08s;
+      user-select: none;
+    }
+    .vote-opt:active { transform: scale(0.97); }
+    .vote-opt.selected {
+      border-color: #b44fff; background: #1c1030; color: #fff;
+      box-shadow: 0 0 0 1px rgba(180,79,255,.25);
+    }
+    .vote-opt.own {
+      opacity: 0.32; cursor: default; font-style: italic;
+    }
+    .vote-opt.own::after { content: ' — ditt svar'; font-size: 0.78em; color: #666; }
+
+    /* ── Results ─────────────────────────────────────────── */
+    .correct-box {
+      background: rgba(0,255,136,.08); border: 1px solid rgba(0,255,136,.25);
+      border-radius: 12px; padding: 13px 16px;
+      font-size: 0.9rem; color: #00ff88;
+      max-width: 340px; text-align: center; line-height: 1.55;
+    }
+    .score-delta {
+      font-size: clamp(3rem, 15vw, 5rem); font-weight: 900;
+      line-height: 1;
+    }
+    .score-total { font-size: 0.85rem; color: #555; }
+    .score-total strong { color: #ccc; font-size: 1.05rem; }
+    .big-screen-cta {
+      font-size: 0.85rem; color: #444; text-align: center;
+    }
+
+    /* ── Final leaderboard ───────────────────────────────── */
+    #final-lb {
+      width: 100%; max-width: 340px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .lb-row {
+      display: flex; align-items: center; gap: 11px;
+      background: #141424; border: 1px solid #222; border-radius: 10px;
+      padding: 11px 15px;
+    }
+    .lb-row.me { border-color: #b44fff; background: #1a1030; }
+    .lb-rank { font-size: 1.3rem; min-width: 34px; text-align: center; }
+    .lb-name { flex: 1; font-size: 0.95rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-score { font-size: 1.15rem; font-weight: 900; color: #b44fff; }
+
+    /* ── No-room overlay ─────────────────────────────────── */
+    #no-room {
+      display: none; position: fixed; inset: 0;
+      background: #080812; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px; padding: 32px; text-align: center; z-index: 999;
+    }
+    #no-room p { color: #555; font-size: 1rem; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+  <div id="no-room">
+    <div class="logo">FAKE SVAR</div>
+    <p>Ingen rumskod hittades.<br>Skanna QR-koden för att gå med.</p>
+  </div>
+
+  <!-- JOIN -->
+  <div id="screen-join" class="screen active">
+    <div class="logo">FAKE SVAR</div>
+    <p class="subtitle">Skriv fejkdefinitioner på ovanliga svenska ord och lura de andra lagen!</p>
+    <input type="text" id="team-name" placeholder="Lagets namn" maxlength="24"
+      autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+    <p id="join-error" class="error-text"></p>
+    <button class="btn btn-primary" id="join-btn">Gå med i spelet</button>
+  </div>
+
+  <!-- LOBBY -->
+  <div id="screen-lobby" class="screen">
+    <div class="pulse-ring"></div>
+    <p class="waiting-text">Väntar på att värden ska starta spelet…</p>
+    <div class="team-badge" id="lobby-badge"></div>
+    <p style="color:#333; font-size:0.8rem;">Håll skärmen aktiv!</p>
+  </div>
+
+  <!-- WRITING -->
+  <div id="screen-writing" class="screen" style="justify-content:flex-start; padding-top:36px;">
+    <p class="phase-chip">Runda <span id="writing-round">1</span></p>
+    <div class="word-big" id="writing-word">—</div>
+    <p class="hint-text">Skriv en <strong style="color:#fff;">trovärdig men fejk</strong> definition. Lura de andra lagen!</p>
+    <textarea id="answer-input" placeholder="Skriv din definition här…" maxlength="220"></textarea>
+    <p id="write-error" class="error-text"></p>
+    <button class="btn btn-primary" id="submit-answer-btn">Skicka svar</button>
+    <p class="progress-label" id="writing-progress"></p>
+  </div>
+
+  <!-- WAITING (reused for multiple states) -->
+  <div id="screen-waiting" class="screen">
+    <div class="pulse-ring"></div>
+    <p class="waiting-text" id="waiting-msg">Väntar…</p>
+    <div class="team-badge" id="waiting-badge"></div>
+  </div>
+
+  <!-- VOTING -->
+  <div id="screen-voting" class="screen" style="justify-content:flex-start; padding-top:28px; overflow-y:auto;">
+    <p class="phase-chip">Vilket är det <strong style="color:#fff; font-size:0.95rem;">RIKTIGA</strong> svaret?</p>
+    <div class="word-big" id="voting-word" style="font-size:clamp(1.8rem,8vw,2.8rem); margin-bottom:4px;"></div>
+    <div id="vote-list"></div>
+    <p id="vote-error" class="error-text"></p>
+    <button class="btn btn-primary" id="submit-vote-btn" disabled>Rösta</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="screen-results" class="screen">
+    <p class="phase-chip" id="results-round-chip">Runda 1</p>
+    <div class="word-big" id="results-word" style="font-size:clamp(2rem,10vw,3rem);"></div>
+    <p class="phase-chip">Rätt svar var</p>
+    <div class="correct-box" id="results-correct"></div>
+    <div class="score-delta" id="results-delta">+0</div>
+    <p class="score-total">Totalt: <strong id="results-total">0</strong> poäng</p>
+    <p class="big-screen-cta">👀 Se storskärmen för detaljer!</p>
+  </div>
+
+  <!-- FINISHED -->
+  <div id="screen-finished" class="screen">
+    <div class="logo">FAKE SVAR</div>
+    <p style="font-size:0.75rem; color:#555; letter-spacing:4px; text-transform:uppercase;">Slutresultat</p>
+    <div id="final-lb"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script>
+    const FIREBASE_CONFIG = {
+      apiKey:            "AIzaSyBCo5xoA8ee8HC_TjngzGgUsAs872eUQ1I",
+      authDomain:        "tap-frenzy-a7630.firebaseapp.com",
+      databaseURL:       "https://tap-frenzy-a7630-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId:         "tap-frenzy-a7630",
+      storageBucket:     "tap-frenzy-a7630.firebasestorage.app",
+      messagingSenderId: "941194814559",
+      appId:             "1:941194814559:web:0f0ddec2e458ed23bc27ea"
+    };
+
+    // Use a named app to avoid conflicts if both games open in same browser session
+    const fbApp = firebase.apps.length
+      ? firebase.app('fake-answer')
+      : firebase.initializeApp(FIREBASE_CONFIG, 'fake-answer');
+    const db = fbApp.database();
+
+    // ── URL ──────────────────────────────────────────────────────
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get('room');
+    if (!roomId) {
+      document.getElementById('no-room').style.display = 'flex';
+      document.getElementById('screen-join').classList.remove('active');
+    }
+
+    // ── State ────────────────────────────────────────────────────
+    let teamKey      = null;
+    let teamName     = '';
+    let myAnswer     = null;
+    let myVote       = null;
+    let myScore      = 0;
+    let currentRound = 0;
+    let selectedOpt  = null;
+
+    // ── DOM ──────────────────────────────────────────────────────
+    const joinBtn         = document.getElementById('join-btn');
+    const joinError       = document.getElementById('join-error');
+    const teamNameInput   = document.getElementById('team-name');
+    const lobbyBadge      = document.getElementById('lobby-badge');
+    const writingRoundEl  = document.getElementById('writing-round');
+    const writingWordEl   = document.getElementById('writing-word');
+    const answerInput     = document.getElementById('answer-input');
+    const writeError      = document.getElementById('write-error');
+    const submitAnswerBtn = document.getElementById('submit-answer-btn');
+    const writingProgress = document.getElementById('writing-progress');
+    const waitingMsg      = document.getElementById('waiting-msg');
+    const waitingBadge    = document.getElementById('waiting-badge');
+    const votingWordEl    = document.getElementById('voting-word');
+    const voteList        = document.getElementById('vote-list');
+    const voteError       = document.getElementById('vote-error');
+    const submitVoteBtn   = document.getElementById('submit-vote-btn');
+    const resultsRoundEl  = document.getElementById('results-round-chip');
+    const resultsWordEl   = document.getElementById('results-word');
+    const resultsCorrect  = document.getElementById('results-correct');
+    const resultsDelta    = document.getElementById('results-delta');
+    const resultsTotal    = document.getElementById('results-total');
+    const finalLb         = document.getElementById('final-lb');
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g,
+        c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function setWaiting(msg) {
+      waitingMsg.textContent = msg;
+      waitingBadge.textContent = teamName;
+      showScreen('screen-waiting');
+    }
+
+    // ── Join ─────────────────────────────────────────────────────
+    joinBtn.addEventListener('click', handleJoin);
+    teamNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleJoin(); });
+
+    async function handleJoin() {
+      const name = teamNameInput.value.trim();
+      if (!name) { joinError.textContent = 'Ange lagets namn!'; return; }
+      joinError.textContent = '';
+      joinBtn.disabled = true; joinBtn.textContent = 'Ansluter…';
+      try {
+        const snap = await db.ref(`fake-answer/${roomId}`).once('value');
+        if (!snap.exists()) { showJoinErr('Rummet hittades inte.'); return; }
+        if (snap.val().state !== 'lobby') { showJoinErr('Spelet har redan börjat!'); return; }
+        teamName = name;
+        const ref = db.ref(`fake-answer/${roomId}/teams`).push();
+        teamKey = ref.key;
+        await ref.set({ name, score: 0 });
+        lobbyBadge.textContent = name;
+        showScreen('screen-lobby');
+        listenToRoom();
+      } catch(e) { showJoinErr('Anslutningsfel – försök igen.'); }
+    }
+    function showJoinErr(msg) {
+      joinError.textContent = msg;
+      joinBtn.disabled = false; joinBtn.textContent = 'Gå med i spelet';
+    }
+
+    // ── Room listener ────────────────────────────────────────────
+    function listenToRoom() {
+      db.ref(`fake-answer/${roomId}`).on('value', snap => {
+        const room = snap.val();
+        if (!room) return;
+        // Reset per-round local state when round changes
+        if (room.round !== currentRound) {
+          currentRound = room.round;
+          myAnswer = null; myVote = null; selectedOpt = null;
+          submitVoteBtn.disabled = true; answerInput.value = '';
+        }
+        dispatch(room);
+      });
+    }
+
+    function dispatch(room) {
+      switch (room.state) {
+        case 'lobby':
+          showScreen('screen-lobby'); break;
+
+        case 'writing':
+          writingRoundEl.textContent = room.round || 1;
+          writingWordEl.textContent  = room.word  || '—';
+          const submitted = Object.keys(room.answers || {}).length;
+          const total     = Object.keys(room.teams  || {}).length;
+          writingProgress.innerHTML = `<strong>${submitted}</strong> / ${total} lag har svarat`;
+          if (myAnswer) {
+            setWaiting(`Svar skickat! Väntar på ${total - submitted} lag till…`);
+          } else {
+            showScreen('screen-writing');
+          }
+          break;
+
+        case 'reviewing':
+          setWaiting('Svar insamlade – väntar på att röstningen ska börja…'); break;
+
+        case 'voting':
+          if (myVote) {
+            setWaiting('Röstat! Väntar på resultaten…');
+          } else if (room.voteOptions) {
+            buildVotingScreen(room);
+          }
+          break;
+
+        case 'results':
+          if (room.roundResult) buildResultsScreen(room); break;
+
+        case 'finished':
+          buildFinishedScreen(room.teams); break;
+      }
+    }
+
+    // ── Submit answer ────────────────────────────────────────────
+    submitAnswerBtn.addEventListener('click', submitAnswer);
+    async function submitAnswer() {
+      const text = answerInput.value.trim();
+      if (!text) { writeError.textContent = 'Skriv en definition först!'; return; }
+      writeError.textContent = '';
+      submitAnswerBtn.disabled = true; submitAnswerBtn.textContent = 'Skickar…';
+      try {
+        await db.ref(`fake-answer/${roomId}/answers/${teamKey}`).set(text);
+        myAnswer = text;
+        submitAnswerBtn.textContent = 'Skicka svar';
+        setWaiting('Svar skickat! Väntar på de andra…');
+      } catch(e) {
+        writeError.textContent = 'Fel – försök igen.';
+        submitAnswerBtn.disabled = false; submitAnswerBtn.textContent = 'Skicka svar';
+      }
+    }
+
+    // ── Build voting screen ──────────────────────────────────────
+    function buildVotingScreen(room) {
+      votingWordEl.textContent = room.word || '—';
+      selectedOpt = null;
+      submitVoteBtn.disabled = true;
+      voteError.textContent = '';
+      voteList.innerHTML = '';
+
+      Object.entries(room.voteOptions).forEach(([key, text]) => {
+        const isOwn = myAnswer && text.trim().toLowerCase() === myAnswer.trim().toLowerCase();
+        const div = document.createElement('div');
+        div.className = 'vote-opt' + (isOwn ? ' own' : '');
+        div.textContent = text;
+        if (!isOwn) {
+          div.addEventListener('click', () => {
+            document.querySelectorAll('.vote-opt').forEach(o => o.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedOpt = key;
+            submitVoteBtn.disabled = false;
+          });
+        }
+        voteList.appendChild(div);
+      });
+      showScreen('screen-voting');
+    }
+
+    submitVoteBtn.addEventListener('click', submitVote);
+    async function submitVote() {
+      if (!selectedOpt) return;
+      submitVoteBtn.disabled = true; submitVoteBtn.textContent = 'Röstar…';
+      voteError.textContent = '';
+      try {
+        await db.ref(`fake-answer/${roomId}/votes/${teamKey}`).set(selectedOpt);
+        myVote = selectedOpt;
+        submitVoteBtn.textContent = 'Rösta';
+        setWaiting('🗳️ Röstat! Väntar på resultaten…');
+      } catch(e) {
+        voteError.textContent = 'Fel – försök igen.';
+        submitVoteBtn.disabled = false; submitVoteBtn.textContent = 'Rösta';
+      }
+    }
+
+    // ── Results screen ───────────────────────────────────────────
+    function buildResultsScreen(room) {
+      const res      = room.roundResult;
+      const newScore = room.teams?.[teamKey]?.score ?? myScore;
+      const delta    = newScore - myScore;
+      myScore        = newScore;
+
+      resultsRoundEl.textContent  = `Runda ${room.round}`;
+      resultsWordEl.textContent   = res.word || '';
+      resultsCorrect.textContent  = res.realDefinition || '';
+      resultsDelta.textContent    = delta >= 0 ? `+${delta}` : `${delta}`;
+      resultsDelta.style.color    = delta > 0 ? '#ffd700' : delta < 0 ? '#ff4444' : '#888';
+      resultsTotal.textContent    = newScore;
+      showScreen('screen-results');
+    }
+
+    // ── Final leaderboard ────────────────────────────────────────
+    function buildFinishedScreen(teams) {
+      if (!teams) return;
+      const sorted = Object.entries(teams)
+        .map(([k, v]) => ({ key: k, name: v.name, score: v.score || 0 }))
+        .sort((a, b) => b.score - a.score);
+      const medals = ['🥇','🥈','🥉'];
+      finalLb.innerHTML = sorted.map((t, i) => `
+        <div class="lb-row${t.key === teamKey ? ' me' : ''}">
+          <div class="lb-rank">${i < 3 ? medals[i] : '#'+(i+1)}</div>
+          <div class="lb-name">${esc(t.name)}${t.key === teamKey ? ' 👈' : ''}</div>
+          <div class="lb-score">${t.score}</div>
+        </div>`).join('');
+      showScreen('screen-finished');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fake Svar — Host</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #080812; color: #fff;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+    .screen {
+      display: none; position: fixed; inset: 0;
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: 36px 48px; gap: 22px;
+    }
+    .screen.active { display: flex; }
+
+    /* ── Shared ──────────────────────────────────────────── */
+    .logo {
+      font-size: clamp(2.6rem, 5vw, 4rem); font-weight: 900;
+      background: linear-gradient(135deg, #b44fff 0%, #ff44cc 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; letter-spacing: -2px; line-height: 1;
+    }
+    .phase-chip {
+      font-size: clamp(0.7rem, 1.5vw, 0.9rem); color: #555;
+      letter-spacing: 4px; text-transform: uppercase;
+    }
+    .big-word {
+      font-size: clamp(3rem, 7vw, 6rem); font-weight: 900;
+      color: #fff; text-align: center; letter-spacing: -2px; line-height: 1;
+    }
+    .btn {
+      padding: 16px 48px; border: none; border-radius: 14px;
+      font-size: clamp(1rem, 2vw, 1.3rem); font-weight: 900; cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+    .btn-primary {
+      background: linear-gradient(135deg, #b44fff, #ff44cc);
+      color: #fff; box-shadow: 0 6px 28px rgba(180,79,255,.35);
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #ffd700, #ff8800); color: #080812;
+      box-shadow: 0 6px 28px rgba(255,180,0,.3);
+    }
+    .btn-ghost {
+      background: #141424; border: 1px solid #2a2a44; color: #888;
+    }
+
+    /* ── LOBBY ───────────────────────────────────────────── */
+    #screen-lobby {
+      flex-direction: row; align-items: stretch; gap: 52px; padding: 32px 44px;
+    }
+    .lobby-left {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 18px; min-width: 260px; max-width: 300px;
+    }
+    #qrcode { background: #fff; padding: 14px; border-radius: 14px; }
+    .room-code-label { font-size: 0.75rem; color: #555; letter-spacing: 4px; text-transform: uppercase; }
+    .room-code {
+      font-size: clamp(2.6rem, 4.5vw, 3.8rem); font-weight: 900;
+      letter-spacing: 10px; color: #ffd700;
+      text-shadow: 0 0 24px rgba(255,210,0,.35);
+    }
+    .lobby-url { font-size: 0.7rem; color: #3a3a5c; word-break: break-all; text-align: center; max-width: 240px; line-height: 1.5; }
+    .lobby-right {
+      flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0;
+    }
+    .teams-header { display: flex; align-items: center; gap: 10px; }
+    .teams-heading { font-size: 0.75rem; color: #555; letter-spacing: 3px; text-transform: uppercase; }
+    #team-count { font-size: 0.95rem; font-weight: 700; color: #b44fff; }
+    #teams-list {
+      flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap;
+      align-content: flex-start; gap: 8px;
+    }
+    .team-pill {
+      background: #141424; border: 1px solid #2a2a44; border-radius: 30px;
+      padding: 9px 18px; font-size: clamp(0.82rem, 1.4vw, 1rem); font-weight: 600;
+      display: flex; align-items: center; gap: 7px;
+      animation: pillIn 0.3s cubic-bezier(.34,1.4,.64,1); white-space: nowrap;
+    }
+    @keyframes pillIn { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .team-dot { width: 7px; height: 7px; border-radius: 50%; background: #b44fff; flex-shrink: 0; }
+    .rounds-row {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .rounds-label { font-size: 0.8rem; color: #555; }
+    .rounds-btn {
+      width: 36px; height: 36px; border-radius: 50%; border: 1px solid #2a2a44;
+      background: #141424; color: #fff; font-size: 1.2rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s;
+    }
+    .rounds-btn:hover { border-color: #b44fff; }
+    #rounds-display { font-size: 1.4rem; font-weight: 900; color: #fff; min-width: 24px; text-align: center; }
+
+    /* ── WRITING ─────────────────────────────────────────── */
+    #screen-writing { gap: 28px; }
+    .round-label { font-size: clamp(1rem, 2vw, 1.2rem); color: #555; letter-spacing: 3px; }
+    .submitted-info { font-size: clamp(1rem, 2vw, 1.2rem); color: #555; }
+    .submitted-info strong { color: #b44fff; font-size: clamp(1.6rem, 3.5vw, 2.2rem); }
+    .progress-track {
+      width: clamp(300px, 50vw, 600px); height: 10px;
+      background: #1c1c30; border-radius: 5px; overflow: hidden;
+    }
+    .progress-fill { height: 100%; background: #b44fff; border-radius: 5px; transition: width 0.4s ease; }
+
+    /* ── REVIEWING ───────────────────────────────────────── */
+    #screen-reviewing {
+      justify-content: flex-start; padding-top: 28px; overflow-y: auto;
+      gap: 16px;
+    }
+    .real-def-box {
+      background: rgba(0,255,136,.07); border: 1px solid rgba(0,255,136,.25);
+      border-radius: 12px; padding: 14px 20px; max-width: 700px; width: 100%;
+    }
+    .real-def-label { font-size: 0.7rem; color: #00ff88; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+    .real-def-text { font-size: clamp(0.9rem, 1.8vw, 1.1rem); color: #00ff88; line-height: 1.5; }
+    #review-list {
+      width: 100%; max-width: 700px;
+      display: flex; flex-direction: column; gap: 10px;
+      overflow-y: auto;
+    }
+    .review-row {
+      display: flex; align-items: flex-start; gap: 14px;
+      background: #141424; border: 1px solid #1e1e34; border-radius: 12px;
+      padding: 14px 18px;
+    }
+    .review-row.corrected { border-color: #00ff88; background: #0d1f14; }
+    .review-team { font-size: 0.8rem; color: #555; font-weight: 700; min-width: 80px; flex-shrink: 0; margin-top: 2px; }
+    .review-text { flex: 1; font-size: clamp(0.85rem, 1.6vw, 1rem); color: #ccc; line-height: 1.5; }
+    .review-row.corrected .review-text { color: #fff; }
+    .correct-toggle {
+      flex-shrink: 0; padding: 7px 14px; border-radius: 8px;
+      border: 1px solid #2a2a44; background: #1c1c30; color: #666;
+      font-size: 0.78rem; font-weight: 700; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap; letter-spacing: 0.5px;
+    }
+    .correct-toggle:hover { border-color: #00ff88; color: #00ff88; }
+    .correct-toggle.active { border-color: #00ff88; background: rgba(0,255,136,.12); color: #00ff88; }
+    .no-answer { font-size: 0.85rem; color: #333; font-style: italic; }
+
+    /* ── VOTING ──────────────────────────────────────────── */
+    #screen-voting { gap: 32px; }
+    .vote-big-count {
+      font-size: clamp(5rem, 15vw, 10rem); font-weight: 900;
+      color: #fff; line-height: 1;
+    }
+    .vote-denom { font-size: clamp(1.5rem, 4vw, 3rem); color: #333; }
+
+    /* ── RESULTS ─────────────────────────────────────────── */
+    #screen-results {
+      justify-content: flex-start; padding-top: 28px; overflow-y: auto; gap: 18px;
+    }
+    #results-options { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 12px; }
+    .result-opt {
+      display: flex; align-items: flex-start; gap: 16px;
+      border-radius: 14px; padding: clamp(12px,2vh,18px) clamp(14px,2.5vw,24px);
+      opacity: 0; transform: translateY(20px);
+      animation: resultReveal 0.4s cubic-bezier(.34,1.2,.64,1) forwards;
+      border: 1px solid #1e1e34; background: #141424;
+    }
+    .result-opt.is-real { border-color: #00ff88; background: rgba(0,255,136,.06); }
+    .result-opt.fooled-many { border-color: #b44fff; background: rgba(180,79,255,.06); }
+    @keyframes resultReveal { to { opacity: 1; transform: translateY(0); } }
+    .result-opt-letter {
+      font-size: clamp(1.2rem, 2.5vw, 1.8rem); font-weight: 900;
+      min-width: clamp(32px,4vw,48px); color: #333; flex-shrink: 0; margin-top: 2px;
+    }
+    .result-opt.is-real .result-opt-letter { color: #00ff88; }
+    .result-opt-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .result-opt-text { font-size: clamp(0.88rem, 1.8vw, 1.1rem); color: #ddd; line-height: 1.5; }
+    .result-opt.is-real .result-opt-text { color: #fff; }
+    .result-meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .result-author { font-size: 0.78rem; color: #555; }
+    .result-author strong { color: #888; }
+    .result-votes { font-size: 0.78rem; color: #555; }
+    .result-pts {
+      font-size: 0.85rem; font-weight: 900; padding: 3px 10px;
+      border-radius: 20px; background: rgba(180,79,255,.2); color: #b44fff;
+    }
+    .result-pts.good { background: rgba(255,210,0,.2); color: #ffd700; }
+    .result-real-badge {
+      font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase;
+      color: #00ff88; font-weight: 700;
+    }
+    .result-voters { font-size: 0.75rem; color: #444; }
+
+    /* Score changes sidebar */
+    #score-changes {
+      width: 100%; max-width: 800px;
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center;
+    }
+    .score-chip {
+      background: #141424; border: 1px solid #1e1e34; border-radius: 8px;
+      padding: 8px 16px; display: flex; align-items: center; gap: 8px;
+      animation: pillIn 0.3s ease-out forwards;
+    }
+    .score-chip-name { font-size: 0.85rem; font-weight: 700; color: #ccc; }
+    .score-chip-delta { font-size: 0.85rem; font-weight: 900; }
+    .score-chip-total { font-size: 0.8rem; color: #555; }
+
+    /* ── FINISHED ────────────────────────────────────────── */
+    #screen-finished { gap: 28px; }
+    #final-lb {
+      width: 100%; max-width: 700px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .lb-row {
+      display: flex; align-items: center; gap: 18px;
+      background: #141424; border: 1px solid #1e1e34; border-radius: 14px;
+      padding: clamp(10px,2vh,16px) clamp(16px,3vw,28px);
+      opacity: 0; transform: translateY(20px);
+      animation: resultReveal 0.4s ease-out forwards;
+    }
+    .lb-row.gold   { border-color: #ffd700; background: #15120a; }
+    .lb-row.silver { border-color: #b0b0b0; background: #111113; }
+    .lb-row.bronze { border-color: #cd7f32; background: #130e09; }
+    .lb-rank { font-size: clamp(1.4rem,3vw,2rem); min-width: clamp(36px,5vw,52px); text-align: center; flex-shrink: 0; }
+    .lb-name { flex: 1; font-size: clamp(1rem,2.5vw,1.6rem); font-weight: 700; }
+    .lb-score { font-size: clamp(1.2rem,3vw,2rem); font-weight: 900; color: #b44fff; }
+    .lb-row.gold   .lb-score { color: #ffd700; }
+    .lb-row.silver .lb-score { color: #d0d0d0; }
+    .lb-row.bronze .lb-score { color: #cd7f32; }
+  </style>
+</head>
+<body>
+
+  <!-- LOBBY -->
+  <div id="screen-lobby" class="screen active">
+    <div class="lobby-left">
+      <div class="logo">FAKE SVAR</div>
+      <div id="qrcode"></div>
+      <p class="room-code-label">Rumskod</p>
+      <div class="room-code" id="room-code-el">----</div>
+      <p class="lobby-url" id="player-url-el"></p>
+    </div>
+    <div class="lobby-right">
+      <div class="teams-header">
+        <p class="teams-heading">Lag anslutna</p>
+        <p id="team-count">0</p>
+      </div>
+      <div id="teams-list"></div>
+      <div class="rounds-row">
+        <p class="rounds-label">Antal rundor:</p>
+        <button class="rounds-btn" id="rounds-minus">−</button>
+        <span id="rounds-display">5</span>
+        <button class="rounds-btn" id="rounds-plus">+</button>
+      </div>
+      <button class="btn btn-primary" id="start-btn" disabled>▶ Starta Spelet</button>
+    </div>
+  </div>
+
+  <!-- WRITING -->
+  <div id="screen-writing" class="screen">
+    <p class="round-label">RUNDA <span id="writing-round">1</span> / <span id="writing-total">5</span></p>
+    <div class="big-word" id="writing-word">—</div>
+    <p class="submitted-info"><strong id="writing-submitted">0</strong> / <span id="writing-team-total">0</span> lag har svarat</p>
+    <div class="progress-track"><div class="progress-fill" id="writing-bar" style="width:0%"></div></div>
+    <button class="btn btn-secondary" id="end-writing-btn">Avsluta skrivfas →</button>
+  </div>
+
+  <!-- REVIEWING (host only) -->
+  <div id="screen-reviewing" class="screen">
+    <p class="phase-chip">Granska svar — <span id="review-word-chip">—</span></p>
+    <div class="real-def-box">
+      <p class="real-def-label">✓ Riktigt svar</p>
+      <p class="real-def-text" id="review-real-def">—</p>
+    </div>
+    <div id="review-list"></div>
+    <button class="btn btn-primary" id="start-voting-btn">🗳️ Starta Röstning</button>
+  </div>
+
+  <!-- VOTING -->
+  <div id="screen-voting" class="screen">
+    <p class="phase-chip">RÖSTNING PÅGÅR — <span id="voting-word-chip">—</span></p>
+    <div style="display:flex; align-items:baseline; gap:12px;">
+      <div class="vote-big-count" id="vote-count">0</div>
+      <div class="vote-denom">/ <span id="vote-total">0</span> röster</div>
+    </div>
+    <button class="btn btn-secondary" id="reveal-btn">Visa Resultat →</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="screen-results" class="screen">
+    <p class="phase-chip">RUNDA <span id="results-round">1</span> / <span id="results-total-rounds">5</span> — <span id="results-word-chip">—</span></p>
+    <div id="results-options"></div>
+    <div id="score-changes"></div>
+    <button class="btn btn-primary" id="next-btn">—</button>
+  </div>
+
+  <!-- FINISHED -->
+  <div id="screen-finished" class="screen">
+    <div class="logo">🏆 &nbsp;FINAL POÄNG&nbsp; 🏆</div>
+    <div id="final-lb"></div>
+    <button class="btn btn-ghost" id="new-game-btn">↺ Nytt Spel</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    // ── Firebase ──────────────────────────────────────────────────
+    const FIREBASE_CONFIG = {
+      apiKey:            "AIzaSyBCo5xoA8ee8HC_TjngzGgUsAs872eUQ1I",
+      authDomain:        "tap-frenzy-a7630.firebaseapp.com",
+      databaseURL:       "https://tap-frenzy-a7630-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId:         "tap-frenzy-a7630",
+      storageBucket:     "tap-frenzy-a7630.firebasestorage.app",
+      messagingSenderId: "941194814559",
+      appId:             "1:941194814559:web:0f0ddec2e458ed23bc27ea"
+    };
+    const fbApp = firebase.apps.length
+      ? firebase.app('fake-answer-host')
+      : firebase.initializeApp(FIREBASE_CONFIG, 'fake-answer-host');
+    const db = fbApp.database();
+
+    // ── Word list ─────────────────────────────────────────────────
+    const WORD_LIST = [
+      { word: "Grynna",      definition: "Ett grunt ställe i vattnet, ett rev eller grund nära kusten" },
+      { word: "Knös",        definition: "En rik men obildad och enfaldig person" },
+      { word: "Glugg",       definition: "En liten öppning eller springa i exempelvis en vägg eller ett staket" },
+      { word: "Vraka",       definition: "Att sortera bort och kassera det som håller sämsta kvalitet" },
+      { word: "Knagg",       definition: "En pinne, krok eller knopp att hänga saker på; även en ojämn knopp" },
+      { word: "Fnurra",      definition: "En liten trasslig knut på en tråd; metaforiskt att vara krånglig eller ha ett problem" },
+      { word: "Sloka",       definition: "Att hänga ner slakt eller sjunka ihop; som när öron eller axlar hänger ner" },
+      { word: "Kurbits",     definition: "Dekorativt motiv i traditionell dalmålning föreställande fantasifulla växter" },
+      { word: "Klövje",      definition: "En packsadel eller bärram som fästs på ett lastdjur för att bära gods" },
+      { word: "Braxen",      definition: "En vanlig sötvattenfisk med djup kropp och silverskimrande fjäll" },
+      { word: "Skråpuk",     definition: "En liten vätte eller spöke ur nordisk folktro som orsakar ofog" },
+      { word: "Dagdrivare",  definition: "En person som driver sysslolöst omkring utan arbete eller mål" },
+      { word: "Dravel",      definition: "Meningslöst struntprat eller nonsens utan värde" },
+      { word: "Pladder",     definition: "Ytligt och meningslöst babbel utan substans" },
+      { word: "Fjant",       definition: "En fjollig eller tanklös person; att bete sig fånigt" },
+      { word: "Knottra",     definition: "Att huden bildar små upphöjda knölar av kyla eller rädsla, gåshud" },
+      { word: "Vräka",       definition: "Att kasta med stor kraft och utan hänsyn; att vältra sig" },
+      { word: "Skvatt",      definition: "En liten stänk av vätska; ett plötsligt ryck av skräck" },
+      { word: "Brakved",     definition: "En buskväxt vars bark historiskt användes som laxermedel i folkmedicinen" },
+      { word: "Vrångbild",   definition: "En förvrängd eller karikerad bild av verkligheten" },
+      { word: "Gnabb",       definition: "Ständigt gräl och kiv om småsaker; petigt och tjatigt bråk" },
+      { word: "Domvilla",    definition: "Rättegångsfel så allvarligt att domen kan undanröjas och rättegången göras om" },
+      { word: "Dalkulla",    definition: "En kvinna från Dalarna, historiskt känd för att resa till städerna för arbete" },
+      { word: "Yrväder",     definition: "Kraftigt snöoväder med hård vind som piskar snön vågrätt" },
+      { word: "Klösa",       definition: "Att krafsa eller riva med klorna; att skrapa ytan på något" },
+    ];
+
+    // ── State ─────────────────────────────────────────────────────
+    let roomId       = null;
+    let roomRef      = null;
+    let teams        = {};
+    let teamCount    = 0;
+    let totalRounds  = 5;
+    let currentRound = 0;
+    let usedWords    = new Set();
+    let currentWordIdx   = -1;
+    let optionMap        = {};  // optKey → teamKey | null(=real)
+    let voteOptionsCache = {};  // optKey → text (for results display)
+    let correctedTeams   = [];  // teamKeys who wrote the correct answer
+    let prevScores       = {};  // scores before current round (for delta display)
+
+    // ── DOM ───────────────────────────────────────────────────────
+    const roomCodeEl     = document.getElementById('room-code-el');
+    const playerUrlEl    = document.getElementById('player-url-el');
+    const teamsList      = document.getElementById('teams-list');
+    const teamCountEl    = document.getElementById('team-count');
+    const startBtn       = document.getElementById('start-btn');
+    const roundsMinus    = document.getElementById('rounds-minus');
+    const roundsPlus     = document.getElementById('rounds-plus');
+    const roundsDisplay  = document.getElementById('rounds-display');
+    const writingRoundEl = document.getElementById('writing-round');
+    const writingTotalEl = document.getElementById('writing-total');
+    const writingWordEl  = document.getElementById('writing-word');
+    const writingSubEl   = document.getElementById('writing-submitted');
+    const writingTeamTot = document.getElementById('writing-team-total');
+    const writingBar     = document.getElementById('writing-bar');
+    const endWritingBtn  = document.getElementById('end-writing-btn');
+    const reviewWordChip = document.getElementById('review-word-chip');
+    const reviewRealDef  = document.getElementById('review-real-def');
+    const reviewList     = document.getElementById('review-list');
+    const startVotingBtn = document.getElementById('start-voting-btn');
+    const votingWordChip = document.getElementById('voting-word-chip');
+    const voteCountEl    = document.getElementById('vote-count');
+    const voteTotalEl    = document.getElementById('vote-total');
+    const revealBtn      = document.getElementById('reveal-btn');
+    const resultsRoundEl = document.getElementById('results-round');
+    const resultsTotREl  = document.getElementById('results-total-rounds');
+    const resultsWordEl  = document.getElementById('results-word-chip');
+    const resultsOptions = document.getElementById('results-options');
+    const scoreChanges   = document.getElementById('score-changes');
+    const nextBtn        = document.getElementById('next-btn');
+    const finalLb        = document.getElementById('final-lb');
+    const newGameBtn     = document.getElementById('new-game-btn');
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g,
+        c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // ── Rounds selector ───────────────────────────────────────────
+    roundsMinus.addEventListener('click', () => {
+      if (totalRounds > 2) { totalRounds--; roundsDisplay.textContent = totalRounds; }
+    });
+    roundsPlus.addEventListener('click', () => {
+      if (totalRounds < 15) { totalRounds++; roundsDisplay.textContent = totalRounds; }
+    });
+
+    // ── Room creation ─────────────────────────────────────────────
+    function genCode() {
+      const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      return Array.from({length:4}, () => c[Math.floor(Math.random()*c.length)]).join('');
+    }
+
+    function buildPlayerUrl(code) {
+      return window.location.href.replace('host.html','player.html').split('?')[0] + '?room=' + code;
+    }
+
+    async function createRoom() {
+      roomId  = genCode();
+      roomRef = db.ref(`fake-answer/${roomId}`);
+
+      roomCodeEl.textContent = roomId;
+      const url = buildPlayerUrl(roomId);
+      playerUrlEl.textContent = url;
+
+      // QR
+      document.getElementById('qrcode').innerHTML = '';
+      const sz = Math.max(160, Math.min(200, window.innerWidth * 0.18));
+      try {
+        new QRCode(document.getElementById('qrcode'), {
+          text: url, width: sz, height: sz,
+          colorDark: '#000', colorLight: '#fff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch(e) {}
+
+      // Write to Firebase
+      try {
+        await roomRef.set({ state: 'lobby', round: 0, createdAt: firebase.database.ServerValue.TIMESTAMP });
+        // Listen for teams
+        db.ref(`fake-answer/${roomId}/teams`).on('child_added', snap => {
+          const key  = snap.key;
+          const data = snap.val();
+          teams[key] = { name: data.name, score: 0 };
+          teamCount++;
+          addTeamPill(data.name);
+          teamCountEl.textContent = teamCount;
+          startBtn.disabled = false;
+        });
+      } catch(e) {
+        console.error('Firebase error:', e);
+      }
+    }
+
+    function addTeamPill(name) {
+      const div = document.createElement('div');
+      div.className = 'team-pill';
+      div.innerHTML = `<div class="team-dot"></div><span>${esc(name)}</span>`;
+      teamsList.appendChild(div);
+    }
+
+    // ── Start game ────────────────────────────────────────────────
+    startBtn.addEventListener('click', () => {
+      currentRound = 0;
+      usedWords    = new Set();
+      startNextRound();
+    });
+
+    async function startNextRound() {
+      currentRound++;
+      correctedTeams = [];
+
+      // Save scores before round for delta calculation
+      prevScores = {};
+      Object.entries(teams).forEach(([k, t]) => { prevScores[k] = t.score || 0; });
+
+      // Pick unused word
+      const available = WORD_LIST.map((w, i) => i).filter(i => !usedWords.has(i));
+      const pick      = available[Math.floor(Math.random() * available.length)];
+      usedWords.add(pick);
+      currentWordIdx = pick;
+      const wordObj  = WORD_LIST[pick];
+
+      await roomRef.update({
+        state:       'writing',
+        round:       currentRound,
+        word:        wordObj.word,
+        definition:  wordObj.definition,
+        answers:     null,
+        voteOptions: null,
+        votes:       null,
+        roundResult: null,
+      });
+
+      writingRoundEl.textContent = currentRound;
+      writingTotalEl.textContent = totalRounds;
+      writingWordEl.textContent  = wordObj.word;
+      writingTeamTot.textContent = teamCount;
+      writingSubEl.textContent   = '0';
+      writingBar.style.width     = '0%';
+
+      // Watch submission count
+      db.ref(`fake-answer/${roomId}/answers`).off();
+      db.ref(`fake-answer/${roomId}/answers`).on('value', snap => {
+        const count = snap.numChildren();
+        writingSubEl.textContent   = count;
+        writingBar.style.width     = (count / Math.max(1, teamCount) * 100) + '%';
+      });
+
+      showScreen('screen-writing');
+    }
+
+    // ── End writing → reviewing ───────────────────────────────────
+    endWritingBtn.addEventListener('click', endWritingPhase);
+
+    async function endWritingPhase() {
+      await roomRef.update({ state: 'reviewing' });
+      db.ref(`fake-answer/${roomId}/answers`).off();
+
+      const wordObj    = WORD_LIST[currentWordIdx];
+      reviewWordChip.textContent = wordObj.word;
+      reviewRealDef.textContent  = wordObj.definition;
+
+      // Read all submitted answers
+      const snap    = await db.ref(`fake-answer/${roomId}/answers`).once('value');
+      const answers = snap.val() || {};
+      correctedTeams = [];
+
+      reviewList.innerHTML = '';
+      Object.entries(teams).forEach(([teamKey, team]) => {
+        const text = answers[teamKey] || null;
+        const row  = document.createElement('div');
+        row.className = 'review-row';
+
+        if (!text) {
+          row.innerHTML = `
+            <div class="review-team">${esc(team.name)}</div>
+            <div class="review-text no-answer">Inget svar inskickat</div>
+          `;
+        } else {
+          let toggled = false;
+          row.innerHTML = `
+            <div class="review-team">${esc(team.name)}</div>
+            <div class="review-text">${esc(text)}</div>
+            <button class="correct-toggle" data-key="${teamKey}">✓ Rätt svar?</button>
+          `;
+          const btn = row.querySelector('.correct-toggle');
+          btn.addEventListener('click', () => {
+            toggled = !toggled;
+            btn.classList.toggle('active', toggled);
+            row.classList.toggle('corrected', toggled);
+            if (toggled) { correctedTeams.push(teamKey); }
+            else         { correctedTeams = correctedTeams.filter(k => k !== teamKey); }
+          });
+        }
+        reviewList.appendChild(row);
+      });
+
+      showScreen('screen-reviewing');
+    }
+
+    // ── Start voting ──────────────────────────────────────────────
+    startVotingBtn.addEventListener('click', startVoting);
+
+    async function startVoting() {
+      const wordObj = WORD_LIST[currentWordIdx];
+      const snap    = await db.ref(`fake-answer/${roomId}/answers`).once('value');
+      const answers = snap.val() || {};
+
+      // Build entries: real definition + non-corrected fake answers
+      const entries = [{ text: wordObj.definition, authorKey: null }];
+      Object.entries(teams).forEach(([teamKey]) => {
+        const text = answers[teamKey];
+        if (text && !correctedTeams.includes(teamKey)) {
+          entries.push({ text, authorKey: teamKey });
+        }
+      });
+
+      // Shuffle
+      entries.sort(() => Math.random() - 0.5);
+
+      // Assign letter keys A, B, C…
+      const keys = 'ABCDEFGHIJKLMN'.split('');
+      const voteOptions = {};
+      optionMap         = {};
+      voteOptionsCache  = {};
+
+      entries.forEach((e, i) => {
+        const k         = keys[i];
+        voteOptions[k]  = e.text;
+        optionMap[k]    = e.authorKey;
+        voteOptionsCache[k] = e.text;
+      });
+
+      await roomRef.update({ state: 'voting', voteOptions });
+
+      // Watch vote count
+      db.ref(`fake-answer/${roomId}/votes`).off();
+      db.ref(`fake-answer/${roomId}/votes`).on('value', snap => {
+        voteCountEl.textContent = snap.numChildren();
+      });
+
+      votingWordChip.textContent = wordObj.word;
+      voteTotalEl.textContent    = teamCount;
+      voteCountEl.textContent    = '0';
+      showScreen('screen-voting');
+    }
+
+    // ── Reveal results ────────────────────────────────────────────
+    revealBtn.addEventListener('click', revealResults);
+
+    async function revealResults() {
+      db.ref(`fake-answer/${roomId}/votes`).off();
+
+      const votesSnap = await db.ref(`fake-answer/${roomId}/votes`).once('value');
+      const votes     = votesSnap.val() || {};
+
+      // Find real option key
+      const realOptKey = Object.entries(optionMap).find(([, v]) => v === null)?.[0];
+
+      // Count votes per option and track voters
+      const voteCounts = {};
+      const votersMap  = {};
+      Object.entries(votes).forEach(([voterKey, optKey]) => {
+        voteCounts[optKey] = (voteCounts[optKey] || 0) + 1;
+        if (!votersMap[optKey]) votersMap[optKey] = [];
+        votersMap[optKey].push(voterKey);
+      });
+
+      // Start from current scores
+      const newScores = {};
+      Object.entries(teams).forEach(([k, t]) => { newScores[k] = t.score || 0; });
+
+      // +5 for teams who wrote correct definition
+      correctedTeams.forEach(k => { newScores[k] = (newScores[k] || 0) + 5; });
+
+      // Build reveal data and compute remaining points
+      const reveal = {};
+      Object.entries(optionMap).forEach(([optKey, authorKey]) => {
+        const isReal    = authorKey === null;
+        const numVotes  = voteCounts[optKey] || 0;
+        const voters    = votersMap[optKey]  || [];
+        let   optPts    = 0;
+
+        if (isReal) {
+          // +3 to each team that guessed correctly
+          voters.forEach(k => { newScores[k] = (newScores[k] || 0) + 3; });
+        } else {
+          // Exponential to the author
+          if (numVotes > 0) {
+            optPts = Math.pow(2, numVotes);
+            newScores[authorKey] = (newScores[authorKey] || 0) + optPts;
+          }
+          // -2 to teams that were fooled
+          voters.forEach(k => { newScores[k] = Math.max(0, (newScores[k] || 0) - 2); });
+        }
+
+        reveal[optKey] = {
+          text:       voteOptionsCache[optKey],
+          isReal,
+          author:     isReal ? null : (teams[authorKey]?.name || '?'),
+          authorKey,
+          voteCount:  numVotes,
+          voters:     voters.map(k => teams[k]?.name).filter(Boolean),
+          points:     optPts,
+        };
+      });
+
+      // Clamp scores at 0 and update local + Firebase
+      const fbUpdates = {};
+      Object.entries(newScores).forEach(([k, s]) => {
+        const safe = Math.max(0, s);
+        newScores[k] = safe;
+        if (teams[k]) teams[k].score = safe;
+        fbUpdates[`teams/${k}/score`] = safe;
+      });
+
+      const isLastRound = currentRound >= totalRounds;
+      fbUpdates['state'] = 'results';
+      fbUpdates['roundResult'] = {
+        word:           WORD_LIST[currentWordIdx].word,
+        realDefinition: WORD_LIST[currentWordIdx].definition,
+        realOptKey,
+        reveal,
+        isLastRound,
+      };
+
+      await roomRef.update(fbUpdates);
+
+      // Build results UI
+      const wordObj = WORD_LIST[currentWordIdx];
+      resultsRoundEl.textContent  = currentRound;
+      resultsTotREl.textContent   = totalRounds;
+      resultsWordEl.textContent   = wordObj.word;
+
+      buildResultsUI(reveal, realOptKey, newScores, isLastRound);
+      showScreen('screen-results');
+    }
+
+    function buildResultsUI(reveal, realOptKey, newScores, isLastRound) {
+      resultsOptions.innerHTML = '';
+      scoreChanges.innerHTML   = '';
+
+      const sortedOpts = Object.entries(reveal).sort(([a], [b]) => a.localeCompare(b));
+
+      sortedOpts.forEach(([optKey, info], i) => {
+        const div = document.createElement('div');
+        div.className = 'result-opt'
+          + (info.isReal ? ' is-real' : '')
+          + (!info.isReal && info.voteCount >= 2 ? ' fooled-many' : '');
+        div.style.animationDelay = `${i * 0.18}s`;
+
+        const voterStr = info.voters.length > 0
+          ? `Röstade: ${info.voters.map(esc).join(', ')}`
+          : 'Ingen röstade på detta';
+
+        let metaHtml = '';
+        if (info.isReal) {
+          metaHtml = `<span class="result-real-badge">✓ Rätt svar</span>`;
+          if (info.voters.length > 0) {
+            metaHtml += `<span class="result-pts good">+3 vardera × ${info.voters.length}</span>`;
+          }
+        } else {
+          metaHtml = `<span class="result-author">Skrivet av <strong>${esc(info.author)}</strong></span>`;
+          if (info.voteCount > 0) {
+            metaHtml += `<span class="result-pts">+${info.points} poäng</span>`;
+          }
+        }
+
+        div.innerHTML = `
+          <div class="result-opt-letter">${optKey}</div>
+          <div class="result-opt-body">
+            <div class="result-opt-text">${esc(info.text)}</div>
+            <div class="result-meta">${metaHtml}</div>
+            <div class="result-voters">${esc(voterStr)}</div>
+          </div>
+        `;
+        resultsOptions.appendChild(div);
+      });
+
+      // Score change chips
+      const sorted = Object.entries(teams)
+        .map(([k, t]) => ({ key: k, name: t.name, score: newScores[k] || 0, prev: prevScores[k] || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      sorted.forEach((t, i) => {
+        const delta = t.score - t.prev;
+        const chip  = document.createElement('div');
+        chip.className = 'score-chip';
+        chip.style.animationDelay = `${0.15 + i * 0.08}s`;
+        chip.innerHTML = `
+          <span class="score-chip-name">${esc(t.name)}</span>
+          <span class="score-chip-delta" style="color:${delta > 0 ? '#00ff88' : delta < 0 ? '#ff4444' : '#555'}">${delta >= 0 ? '+' : ''}${delta}</span>
+          <span class="score-chip-total">${t.score} p</span>
+        `;
+        scoreChanges.appendChild(chip);
+      });
+
+      // Corrected teams bonus note
+      if (correctedTeams.length > 0) {
+        const note = document.createElement('p');
+        note.style.cssText = 'width:100%;text-align:center;font-size:0.8rem;color:#00ff88;';
+        note.textContent = '✓ ' + correctedTeams.map(k => teams[k]?.name).filter(Boolean).join(', ')
+          + ' skrev rätt svar (+5)';
+        scoreChanges.prepend(note);
+      }
+
+      // Next button
+      nextBtn.textContent = isLastRound ? '🏆 Visa Slutresultat' : `▶ Nästa Runda (${currentRound + 1}/${totalRounds})`;
+      nextBtn.onclick = isLastRound ? endGame : startNextRound;
+    }
+
+    // ── End game ──────────────────────────────────────────────────
+    async function endGame() {
+      await roomRef.update({ state: 'finished' });
+      buildFinalLeaderboard();
+      showScreen('screen-finished');
+    }
+
+    function buildFinalLeaderboard() {
+      const sorted = Object.entries(teams)
+        .map(([k, t]) => ({ key: k, name: t.name, score: t.score || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      const posClasses = ['gold', 'silver', 'bronze'];
+      const medals     = ['🥇','🥈','🥉'];
+
+      finalLb.innerHTML = '';
+      sorted.forEach((t, i) => {
+        const row = document.createElement('div');
+        row.className = `lb-row${i < 3 ? ' ' + posClasses[i] : ''}`;
+        row.style.animationDelay = `${i * 0.12}s`;
+        row.innerHTML = `
+          <div class="lb-rank">${i < 3 ? medals[i] : '#'+(i+1)}</div>
+          <div class="lb-name">${esc(t.name)}</div>
+          <div class="lb-score">${t.score}</div>
+        `;
+        finalLb.appendChild(row);
+      });
+    }
+
+    // ── New game ──────────────────────────────────────────────────
+    newGameBtn.addEventListener('click', async () => {
+      if (roomRef) {
+        db.ref(`fake-answer/${roomId}/teams`).off();
+        await roomRef.remove();
+      }
+      teams = {}; teamCount = 0;
+      teamsList.innerHTML = '';
+      teamCountEl.textContent = '0';
+      startBtn.disabled = true;
+      finalLb.innerHTML = '';
+      await createRoom();
+      showScreen('screen-lobby');
+    });
+
+    // ── Init ──────────────────────────────────────────────────────
+    createRoom();
+  </script>
+</body>
+</html>
