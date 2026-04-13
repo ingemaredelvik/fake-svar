@@ -534,7 +534,7 @@
       });
 
       votingWordChip.textContent = wordObj.word;
-      voteTotalEl.textContent    = teamCount;
+      voteTotalEl.textContent    = teamCount - correctedTeams.length;
       voteCountEl.textContent    = '0';
       showScreen('screen-voting');
     }
