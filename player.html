@@ -189,7 +189,7 @@
   <!-- JOIN -->
   <div id="screen-join" class="screen active">
     <div class="logo">FAKE SVAR</div>
-    <p class="subtitle">Skriv fejkdefinitioner på ovanliga svenska ord och lura de andra lagen!</p>
+    <p class="subtitle">Skriv ett fejk-synonym för ovanliga svenska ord — och lura de andra lagen!</p>
     <input type="text" id="team-name" placeholder="Lagets namn" maxlength="24"
       autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
     <p id="join-error" class="error-text"></p>
@@ -208,8 +208,8 @@
   <div id="screen-writing" class="screen" style="justify-content:flex-start; padding-top:36px;">
     <p class="phase-chip">Runda <span id="writing-round">1</span></p>
     <div class="word-big" id="writing-word">—</div>
-    <p class="hint-text">Skriv en <strong style="color:#fff;">trovärdig men fejk</strong> definition. Lura de andra lagen!</p>
-    <textarea id="answer-input" placeholder="Skriv din definition här…" maxlength="220"></textarea>
+    <p class="hint-text">Skriv ett <strong style="color:#fff;">fejk synonymt ord</strong> — ett ord som låter rätt men inte är det!</p>
+    <textarea id="answer-input" placeholder="Ett ord…" maxlength="60" rows="2"></textarea>
     <p id="write-error" class="error-text"></p>
     <button class="btn btn-primary" id="submit-answer-btn">Skicka svar</button>
     <p class="progress-label" id="writing-progress"></p>
@@ -235,7 +235,7 @@
   <div id="screen-results" class="screen">
     <p class="phase-chip" id="results-round-chip">Runda 1</p>
     <div class="word-big" id="results-word" style="font-size:clamp(2rem,10vw,3rem);"></div>
-    <p class="phase-chip">Rätt svar var</p>
+    <p class="phase-chip">Rätt synonym var</p>
     <div class="correct-box" id="results-correct"></div>
     <div class="score-delta" id="results-delta">+0</div>
     <p class="score-total">Totalt: <strong id="results-total">0</strong> poäng</p>
@@ -359,7 +359,11 @@
         if (room.round !== currentRound) {
           currentRound = room.round;
           myAnswer = null; myVote = null; selectedOpt = null;
-          submitVoteBtn.disabled = true; answerInput.value = '';
+          answerInput.value = '';
+          writeError.textContent = '';
+          submitAnswerBtn.disabled = false;
+          submitAnswerBtn.textContent = 'Skicka svar';
+          submitVoteBtn.disabled = true;
         }
         dispatch(room);
       });

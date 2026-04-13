@@ -272,7 +272,7 @@
   <div id="screen-reviewing" class="screen">
     <p class="phase-chip">Granska svar — <span id="review-word-chip">—</span></p>
     <div class="real-def-box">
-      <p class="real-def-label">✓ Riktigt svar</p>
+      <p class="real-def-label">✓ Rätt synonym</p>
       <p class="real-def-text" id="review-real-def">—</p>
     </div>
     <div id="review-list"></div>
@@ -324,33 +324,34 @@
       : firebase.initializeApp(FIREBASE_CONFIG, 'fake-answer-host');
     const db = fbApp.database();
 
-    // ── Word list ─────────────────────────────────────────────────
+    // ── Word list — one-word synonyms as correct answers ──────────
+    // Players write a fake ONE-WORD synonym; the real answer is also one word.
     const WORD_LIST = [
-      { word: "Grynna",      definition: "Ett grunt ställe i vattnet, ett rev eller grund nära kusten" },
-      { word: "Knös",        definition: "En rik men obildad och enfaldig person" },
-      { word: "Glugg",       definition: "En liten öppning eller springa i exempelvis en vägg eller ett staket" },
-      { word: "Vraka",       definition: "Att sortera bort och kassera det som håller sämsta kvalitet" },
-      { word: "Knagg",       definition: "En pinne, krok eller knopp att hänga saker på; även en ojämn knopp" },
-      { word: "Fnurra",      definition: "En liten trasslig knut på en tråd; metaforiskt att vara krånglig eller ha ett problem" },
-      { word: "Sloka",       definition: "Att hänga ner slakt eller sjunka ihop; som när öron eller axlar hänger ner" },
-      { word: "Kurbits",     definition: "Dekorativt motiv i traditionell dalmålning föreställande fantasifulla växter" },
-      { word: "Klövje",      definition: "En packsadel eller bärram som fästs på ett lastdjur för att bära gods" },
-      { word: "Braxen",      definition: "En vanlig sötvattenfisk med djup kropp och silverskimrande fjäll" },
-      { word: "Skråpuk",     definition: "En liten vätte eller spöke ur nordisk folktro som orsakar ofog" },
-      { word: "Dagdrivare",  definition: "En person som driver sysslolöst omkring utan arbete eller mål" },
-      { word: "Dravel",      definition: "Meningslöst struntprat eller nonsens utan värde" },
-      { word: "Pladder",     definition: "Ytligt och meningslöst babbel utan substans" },
-      { word: "Fjant",       definition: "En fjollig eller tanklös person; att bete sig fånigt" },
-      { word: "Knottra",     definition: "Att huden bildar små upphöjda knölar av kyla eller rädsla, gåshud" },
-      { word: "Vräka",       definition: "Att kasta med stor kraft och utan hänsyn; att vältra sig" },
-      { word: "Skvatt",      definition: "En liten stänk av vätska; ett plötsligt ryck av skräck" },
-      { word: "Brakved",     definition: "En buskväxt vars bark historiskt användes som laxermedel i folkmedicinen" },
-      { word: "Vrångbild",   definition: "En förvrängd eller karikerad bild av verkligheten" },
-      { word: "Gnabb",       definition: "Ständigt gräl och kiv om småsaker; petigt och tjatigt bråk" },
-      { word: "Domvilla",    definition: "Rättegångsfel så allvarligt att domen kan undanröjas och rättegången göras om" },
-      { word: "Dalkulla",    definition: "En kvinna från Dalarna, historiskt känd för att resa till städerna för arbete" },
-      { word: "Yrväder",     definition: "Kraftigt snöoväder med hård vind som piskar snön vågrätt" },
-      { word: "Klösa",       definition: "Att krafsa eller riva med klorna; att skrapa ytan på något" },
+      { word: "Grymta",      definition: "morra" },
+      { word: "Fnissa",      definition: "kichna" },
+      { word: "Sniken",      definition: "girig" },
+      { word: "Lömsk",       definition: "falsk" },
+      { word: "Skröna",      definition: "lögn" },
+      { word: "Kaxig",       definition: "arrogant" },
+      { word: "Härsken",     definition: "skämd" },
+      { word: "Kvida",       definition: "jämra" },
+      { word: "Dröjsmål",    definition: "försening" },
+      { word: "Håglös",      definition: "likgiltig" },
+      { word: "Kurtisera",   definition: "flörta" },
+      { word: "Vresig",      definition: "butter" },
+      { word: "Tjuta",       definition: "yla" },
+      { word: "Flämta",      definition: "flåsa" },
+      { word: "Truga",       definition: "tjata" },
+      { word: "Knysta",      definition: "klaga" },
+      { word: "Dingla",      definition: "hänga" },
+      { word: "Fnurra",      definition: "knut" },
+      { word: "Brusa",       definition: "dundra" },
+      { word: "Knata",       definition: "vandra" },
+      { word: "Glufsa",      definition: "slunga" },
+      { word: "Skalka",      definition: "smita" },
+      { word: "Klanta",      definition: "fumla" },
+      { word: "Gnissla",     definition: "skräna" },
+      { word: "Strupna",     definition: "kvävas" },
     ];
 
     // ── State ─────────────────────────────────────────────────────
@@ -554,7 +555,7 @@
           row.innerHTML = `
             <div class="review-team">${esc(team.name)}</div>
             <div class="review-text">${esc(text)}</div>
-            <button class="correct-toggle" data-key="${teamKey}">✓ Rätt svar?</button>
+            <button class="correct-toggle" data-key="${teamKey}">⚠️ Skrev rätt svar (−2)</button>
           `;
           const btn = row.querySelector('.correct-toggle');
           btn.addEventListener('click', () => {
@@ -643,8 +644,8 @@
       const newScores = {};
       Object.entries(teams).forEach(([k, t]) => { newScores[k] = t.score || 0; });
 
-      // +5 for teams who wrote correct definition
-      correctedTeams.forEach(k => { newScores[k] = (newScores[k] || 0) + 5; });
+      // -2 penalty for teams who wrote the correct definition (they shouldn't!)
+      correctedTeams.forEach(k => { newScores[k] = Math.max(0, (newScores[k] || 0) - 2); });
 
       // Build reveal data and compute remaining points
       const reveal = {};
@@ -728,7 +729,7 @@
 
         let metaHtml = '';
         if (info.isReal) {
-          metaHtml = `<span class="result-real-badge">✓ Rätt svar</span>`;
+          metaHtml = `<span class="result-real-badge">✓ Rätt synonym</span>`;
           if (info.voters.length > 0) {
             metaHtml += `<span class="result-pts good">+3 vardera × ${info.voters.length}</span>`;
           }
@@ -771,9 +772,9 @@
       // Corrected teams bonus note
       if (correctedTeams.length > 0) {
         const note = document.createElement('p');
-        note.style.cssText = 'width:100%;text-align:center;font-size:0.8rem;color:#00ff88;';
-        note.textContent = '✓ ' + correctedTeams.map(k => teams[k]?.name).filter(Boolean).join(', ')
-          + ' skrev rätt svar (+5)';
+        note.style.cssText = 'width:100%;text-align:center;font-size:0.8rem;color:#ff5566;';
+        note.textContent = '⚠️ ' + correctedTeams.map(k => teams[k]?.name).filter(Boolean).join(', ')
+          + ' skrev rätt svar (−2 straff)';
         scoreChanges.prepend(note);
       }
 
