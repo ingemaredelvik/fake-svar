@@ -587,7 +587,7 @@
         } else {
           // Exponential to the author
           if (numVotes > 0) {
-            optPts = Math.pow(2, numVotes);
+            optPts = 2 * numVotes;
             newScores[authorKey] = (newScores[authorKey] || 0) + optPts;
           }
           // -2 to teams that were fooled
