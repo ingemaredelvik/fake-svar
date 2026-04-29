@@ -105,9 +105,9 @@
       font-size: 0.7rem; color: #555; letter-spacing: 4px; text-transform: uppercase;
     }
     .word-big {
-      font-size: clamp(2.4rem, 12vw, 4rem);
-      font-weight: 900; color: #fff; text-align: center;
-      letter-spacing: -1px; line-height: 1;
+      font-size: clamp(1rem, 4.5vw, 1.4rem);
+      font-weight: 700; color: #fff; text-align: center;
+      letter-spacing: 0; line-height: 1.4;
     }
     .hint-text {
       font-size: 0.85rem; color: #555; text-align: center; max-width: 300px; line-height: 1.5;
@@ -206,7 +206,7 @@
   </div>
 
   <!-- WRITING -->
-  <div id="screen-writing" class="screen" style="justify-content:flex-start; padding-top:36px;">
+  <div id="screen-writing" class="screen" style="justify-content:flex-start; padding-top:36px; overflow-y:auto;">
     <p class="phase-chip">Runda <span id="writing-round">1</span></p>
     <div class="word-big" id="writing-word">—</div>
     <p class="hint-text">Skriv ett <strong style="color:#fff;">fejk-svar</strong> — något som låter rätt men inte är det!</p>
@@ -227,7 +227,7 @@
   <div id="screen-penalized" class="screen">
     <div style="font-size:2.6rem">🤔</div>
     <p style="font-size:0.7rem; color:#ffd700; letter-spacing:4px; text-transform:uppercase;">Du svarade rätt!</p>
-    <div id="penalized-word" class="word-big" style="font-size:clamp(2rem,9vw,3rem);"></div>
+    <div id="penalized-word" class="word-big"></div>
     <div style="background:rgba(255,68,68,.1); border:1px solid rgba(255,68,68,.3); border-radius:14px; padding:18px 22px; max-width:300px; text-align:center; line-height:1.65;">
       <p style="color:#ff6666; font-weight:800; font-size:1.4rem; margin-bottom:6px;">−2 poäng</p>
       <p style="color:#888; font-size:0.85rem;">Du svarade med rätt svar — man ska skriva ett <em style="color:#ccc;">fejk</em> svar. Du är utesluten från röstningen denna runda.</p>
@@ -238,7 +238,7 @@
   <!-- VOTING -->
   <div id="screen-voting" class="screen" style="justify-content:flex-start; padding-top:28px; overflow-y:auto;">
     <p class="phase-chip">Vilket är det <strong style="color:#fff; font-size:0.95rem;">RIKTIGA</strong> svaret?</p>
-    <div class="word-big" id="voting-word" style="font-size:clamp(1.8rem,8vw,2.8rem); margin-bottom:4px;"></div>
+    <div class="word-big" id="voting-word" style="margin-bottom:4px;"></div>
     <div id="vote-list"></div>
     <p id="vote-error" class="error-text"></p>
     <button class="btn btn-primary" id="submit-vote-btn" disabled>Rösta</button>
@@ -247,7 +247,7 @@
   <!-- RESULTS -->
   <div id="screen-results" class="screen">
     <p class="phase-chip" id="results-round-chip">Runda 1</p>
-    <div class="word-big" id="results-word" style="font-size:clamp(2rem,10vw,3rem);"></div>
+    <div class="word-big" id="results-word"></div>
     <p class="phase-chip">Rätt svar var</p>
     <div class="correct-box" id="results-correct"></div>
     <div class="score-delta" id="results-delta">+0</div>
