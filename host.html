@@ -281,27 +281,16 @@
     // ── Word list — one-word synonyms as correct answers ──────────
     // Players write a fake ONE-WORD synonym; the real answer is also one word.
     const WORD_LIST = [
-      { word: "Elektriska stolen uppfanns av Alfred Soutwick, vilket yrke hade han?",      definition: "Tandläkare" },
-      { word: "Vad jobbade Påve Franciskus som under sin studietid i Buenos Aires?",      definition: "Dörrvakt" },
-      { word: "År 2010, stoppade tullen mellan Norge & Sverige en lastbil från Kina som försökte smuggla 28 ton _____",      definition: "Vitlök" },
-      { word: "Snickers (godisen) var nämnd efter dess grundares ______ ",       definition: "Häst" },
-      { word: "Vad hette Pepsi Cola innan den bytte namn till Pepsi?",      definition: "Brad's Drink" },
-      { word: "Samsung är känt för avancerad teknik idag – men vad tillverkade företaget under sina tidiga år?",       definition: "Nudlar" },
-      { word: "Vad var Oxford Dictionaries word of the year 2013?",     definition: "Selfie" },
-      { word: "I april 2015 meddelade Kinas kulturministerium att de skulle slå ner på den ökande populariteten av _____ på begravningar.",       definition: "Strippor" },
-      { word: "Ben McMahon från Australien låg i koma efter en bilolycka. När han vaknade upptäckte han att han plötsligt kunde _____",    definition: "Prata kinesiska" },
-      { word: "Någon som sysslar med onalatri gillar verkligen _____.",      definition: "Åsnor" },
-      { word: "År 2005 åtalades en man i Manchester, New Hampshire för att ha stulit från en Wendy's. Intressant nog hette mannen _____.",   definition: "Ronald McDonald" },
-      { word: "Vad är det unika som alla träd i Melbourne, Australien har?",      definition: "E-postadresser" },
-      { word: "En nordkoreansk lärarhandbok från 2015 påstod att Kim Jong Un lärde sig att _____ vid tre års ålder.",       definition: "Köra bil" },
-      { word: "En Krispy Kreme-butik i Storbritannien bad om ursäkt för en stötande kampanj kallad _____ Wednesday.",      definition: "KKK" },
-      { word: "Vad är personer med tokofobi rädda för?",       definition: "Graviditet" },
-      { word: "Vad trodde den franske kungen Karl VI att han var gjord av?",      definition: "Glas" },
-      { word: "År 2008 lyckades forskare göra tequila till _____.",      definition: "Diamanter" },
-      { word: "I Finland får doktorander inte bara en hatt utan också ett _____.",      definition: "Svärd" },
-      { word: "Australiens största online-petition år 2000 ville sänka priset på _____.",       definition: "Öl" },
-      { word: "År 2013 köpte en rik man i Michigan huset bredvid sin exfru och reste en stor bronsstaty av ett _____.",       definition: "Långfinger" },
-      { word: "Albert Einsteins ögon sägs finnas i ett _____ i New York City.",      definition: "Bankfack" },
+      { word: "Vad var den första produkten som Sony sålde efter grundandet?", definition: "Riskokare" },
+      { word: "Vilket djur är Skottlands officiella nationaldjur?", definition: "Enhörning" },
+      { word: "Vilken färg har den svarta lådan i flygplan egentligen?", definition: "Orange" },
+      { word: "Om man är rädd för Hippopotomonstrosesquippedaliofobi, vad är man rädd för?", definition: "Långa ord" },
+      { word: "El Colacho är en spansk festival där människor klär ut sig till djävulen och hoppar över _________.", definition: "Bebisar" },
+      { word: "Vad heter Michelingubben egentligen?", definition: "Bibendum" },
+      { word: "Vilken färg är noshörningsmjölk?", definition: "Rosa" },
+      { word: "Under andra världskriget tränade USA upp _________ för att användas som levande bomber mot japanska byggnader.", definition: "Fladdermöss" },
+      { word: "Den första personen som arresterades för fortkörning åkte fast år 1896 i hastigheten _________ km/h.", definition: "13" },
+      { word: "Någon som sysslar med onalatri gillar verkligen _________.", definition: "Åsnor" },
     ];
 
     // ── State ─────────────────────────────────────────────────────
@@ -598,8 +587,6 @@
             optPts = 2 * numVotes;
             newScores[authorKey] = (newScores[authorKey] || 0) + optPts;
           }
-          // -2 to teams that were fooled
-          voters.forEach(k => { newScores[k] = (newScores[k] || 0) - 2; });
         }
 
         reveal[optKey] = {
